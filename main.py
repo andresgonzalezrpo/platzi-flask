@@ -1,19 +1,19 @@
 from flask import Flask, request, make_response, redirect, render_template, session, url_for, flash
 from flask_bootstrap import Bootstrap
-from flask_wtf import FlaskForm
-from wtforms.fields import StringField, PasswordField, SubmitField
-from wtforms.validators import DataRequired
+from app.forms import LoginForm
+import unittest
+from app.firestore_service import get_users, get_todos
+from app import create_app
 
-app = Flask(__name__)
-bootstrap = Bootstrap(app)
-app.config['SECRET_KEY']= 'SUPER SECRETO'
+app = create_app()
 
 todos = ['buy coffe','send request','deliver video to productor']
 
-class LoginForm(FlaskForm):
-    username = StringField('Nombre de usuario',validators=[DataRequired()])
-    password = PasswordField('Password',validators=[DataRequired()])
-    submit = SubmitField('Enviar')
+
+@app.cli.command()
+def test():
+    tests = unittest.TestLoader().discover('tests')
+    unittest.TextTestRunner().run(tests)
 
 
 @app.errorhandler(500)
@@ -26,30 +26,33 @@ def not_found(error):
 
 @app.route("/")
 def index():
-    user_ip= request.remote_addr
-    
+    user_ip= request.remote_addr    
     response = make_response(redirect('/hello'))
     session['user_ip']= user_ip    
     #response.set_cookie('user_ip',user_ip)
     return response
 
-@app.route('/hello', methods = ['GET','POST'])
+@app.route('/hello', methods = ['GET'])
 def hello():
     #user_ip = request.cookies.get('user_ip')
-    login_form = LoginForm()
+    #login_form = LoginForm()
     user_ip =  session.get('user_ip')
     username = session.get('username')
     context = {'user_ip':user_ip,
-               'todos':todos,
-               'login_form':login_form,
+               'todos':get_todos(user_id=username),
+              # 'login_form':login_form,
                'username': username
     }
+    users = get_users()
+    for user in users:
+        print(user.id)
+        print(user.to_dict()['password'])
 
-    if login_form.validate_on_submit():
-        username = login_form.username.data
-        session['username'] = username
-        flash('Username successfully')
-        return redirect(url_for('index'))
+    # if login_form.validate_on_submit():
+    #     username = login_form.username.data
+    #     session['username'] = username
+    #     flash('Username successfully')
+    #     return redirect(url_for('index'))
 
     return render_template('hello.html',**context) # ** expand the dictionary
 
