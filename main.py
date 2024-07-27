@@ -1,9 +1,10 @@
 from flask import Flask, request, make_response, redirect, render_template, session, url_for, flash
 from flask_bootstrap import Bootstrap
-from app.forms import LoginForm
+from app.forms import TodoForm
 import unittest
-from app.firestore_service import get_users, get_todos
+from app.firestore_service import get_users, get_todos, put_todo
 from app import create_app
+from flask_login import login_required, current_user
 
 app = create_app()
 
@@ -32,21 +33,32 @@ def index():
     #response.set_cookie('user_ip',user_ip)
     return response
 
-@app.route('/hello', methods = ['GET'])
+@app.route('/hello', methods = ['GET','POST'])
+@login_required
 def hello():
     #user_ip = request.cookies.get('user_ip')
     #login_form = LoginForm()
     user_ip =  session.get('user_ip')
-    username = session.get('username')
+    username = current_user.id
+    todo_form = TodoForm()
+
+    #username = session.get('username')
     context = {'user_ip':user_ip,
                'todos':get_todos(user_id=username),
               # 'login_form':login_form,
-               'username': username
+               'username': username,
+               'todo_form': todo_form
     }
-    users = get_users()
-    for user in users:
-        print(user.id)
-        print(user.to_dict()['password'])
+
+    if todo_form.validate_on_submit():
+        put_todo(user_id=username,description=todo_form.description.data)
+        flash('Activity was created successfully')
+        return redirect(url_for('hello'))
+
+    # users = get_users()
+    # for user in users:
+    #     print(user.id)
+    #     print(user.to_dict()['password'])
 
     # if login_form.validate_on_submit():
     #     username = login_form.username.data

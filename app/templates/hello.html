@@ -16,7 +16,13 @@
     <h3>your IP is {{ user_ip }}</h3>
     {% else %}
     <a href="{{ url_for('index')}}"> Ir a inicio</a>
-    {% endif %}      
+    {% endif %}    
+    
+    <div class="container">
+        <h2>Create new activity</h2>
+        {{ wtf.quick_form(todo_form)}}
+
+    </div>
 
     <ul>
     {% for todo in todos %}
